@@ -709,8 +709,8 @@
 
       <div class="grid2">
         <div class="field">
-          <label>SIM Card</label>
-          <textarea class="short" id="cSIM" placeholder="Best SIM options..." oninput="updatePreview()"></textarea>
+          <label>Sim Card</label>
+          <textarea class="short" id="cSim" placeholder="Best SIM options..." oninput="updatePreview()"></textarea>
         </div>
         <div class="field">
           <label>Logistics</label>
@@ -862,7 +862,7 @@
 
   const SECTIONS = [
     { id: 'cClothing',  label: 'Clothing',   icon: '👕' },
-    { id: 'cSIM',       label: 'SIM Card',   icon: '📱' },
+    { id: 'cSim',       label: 'Sim Card',   icon: '📱' },
     { id: 'cLogistics', label: 'Logistics',  icon: '🚌' },
     { id: 'cLodging',   label: 'Lodging',    icon: '🏨' },
     { id: 'cShopping',  label: 'Shopping',   icon: '🛍️' },
@@ -1116,21 +1116,39 @@
 
       const children = [];
 
-      if (coverUrl) {
-        children.push({ object: 'block', type: 'image', image: { type: 'external', external: { url: coverUrl } } });
+      // Description paragraph at top
+      const desc = document.getElementById('cDesc').value.trim();
+      if (desc) {
+        children.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: richText(desc) } });
+        children.push({ object: 'block', type: 'divider', divider: {} });
       }
 
+      // Cities as a callout block
+      if (cityTags.length) {
+        children.push({
+          object: 'block', type: 'callout',
+          callout: {
+            icon: { type: 'emoji', emoji: '🏙️' },
+            rich_text: richText('Cities: ' + cityTags.join(' · '))
+          }
+        });
+      }
+
+      // Each section as a callout block with its emoji icon
       SECTIONS.forEach(s => {
         const val = document.getElementById(s.id).value.trim();
         if (!val) return;
-        children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText(s.label) } });
-        children.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: richText(val) } });
+        children.push({
+          object: 'block', type: 'callout',
+          callout: {
+            icon: { type: 'emoji', emoji: s.icon },
+            rich_text: [
+              { type: 'text', text: { content: s.label + '\n' }, annotations: { bold: true } },
+              { type: 'text', text: { content: val.slice(0, 1900) } }
+            ]
+          }
+        });
       });
-
-      if (cityTags.length) {
-        children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Cities') } });
-        cityTags.forEach(city => children.push({ object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: richText(city) } }));
-      }
 
       btn.textContent = 'Pushing to Notion...';
 
@@ -1145,16 +1163,21 @@
       if (cityTags.length) {
         properties['Cities'] = { rich_text: richText(cityTags.join(', ')) };
       }
-      const desc = document.getElementById('cDesc').value.trim();
       if (desc) properties['Description'] = { rich_text: richText(desc) };
+
+      // Page-level cover and icon
+      const pagePayload = {
+        parent: { database_id: COUNTRIES_DB },
+        icon: { type: 'emoji', emoji: '🌍' },
+        properties,
+        children
+      };
+      if (coverUrl) pagePayload.cover = { type: 'external', external: { url: coverUrl } };
 
       const res = await fetch(PROXY, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          endpoint: 'pages',
-          payload: { parent: { database_id: COUNTRIES_DB }, properties, children }
-        })
+        body: JSON.stringify({ endpoint: 'pages', payload: pagePayload })
       });
 
       const data = await res.json();
@@ -1182,21 +1205,37 @@
       const places = placesText ? placesText.split('\n').join(',').split(',').map(p => p.trim()).filter(Boolean) : [];
 
       const children = [];
-      children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Description') } });
-      children.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: richText(document.getElementById('cityDesc').value.trim()) } });
 
-      if (places.length) {
-        children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Places to Visit') } });
-        places.forEach(p => children.push({ object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: richText(p) } }));
+      // Description
+      const cityDescVal = document.getElementById('cityDesc').value.trim();
+      if (cityDescVal) {
+        children.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: richText(cityDescVal) } });
+        children.push({ object: 'block', type: 'divider', divider: {} });
       }
 
+      // Places to visit as callout
+      if (places.length) {
+        children.push({
+          object: 'block', type: 'callout',
+          callout: {
+            icon: { type: 'emoji', emoji: '📍' },
+            rich_text: [
+              { type: 'text', text: { content: 'Places to Visit\n' }, annotations: { bold: true } },
+              { type: 'text', text: { content: places.join('  ·  ') } }
+            ]
+          }
+        });
+      }
+
+      // Map image
       if (mapUrl) {
-        children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Map') } });
+        children.push({ object: 'block', type: 'heading_3', heading_3: { rich_text: richText('🗺️ Map') } });
         children.push({ object: 'block', type: 'image', image: { type: 'external', external: { url: mapUrl } } });
       }
 
+      // Gallery images
       if (allGal.length) {
-        children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Gallery') } });
+        children.push({ object: 'block', type: 'heading_3', heading_3: { rich_text: richText('🖼️ Gallery') } });
         allGal.forEach(url => children.push({ object: 'block', type: 'image', image: { type: 'external', external: { url } } }));
       }
 
@@ -1206,21 +1245,22 @@
         Name: { title: richText(document.getElementById('cityName').value.trim()) },
         'Parent Country': { rich_text: richText(document.getElementById('cityParent').value.trim()) },
       };
-      const cityDescVal = document.getElementById('cityDesc').value.trim();
       if (cityDescVal) cityProperties['Description'] = { rich_text: richText(cityDescVal) };
       if (places.length) cityProperties['Places to Visit'] = { rich_text: richText(places.join(', ')) };
+
+      // Page-level cover (map image) and icon
+      const cityPayload = {
+        parent: { database_id: CITIES_DB },
+        icon: { type: 'emoji', emoji: '🏙️' },
+        properties: cityProperties,
+        children
+      };
+      if (mapUrl) cityPayload.cover = { type: 'external', external: { url: mapUrl } };
 
       const res = await fetch(PROXY, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          endpoint: 'pages',
-          payload: {
-            parent: { database_id: CITIES_DB },
-            properties: cityProperties,
-            children
-          }
-        })
+        body: JSON.stringify({ endpoint: 'pages', payload: cityPayload })
       });
 
       const data = await res.json();
@@ -1233,7 +1273,7 @@
   }
 
   function clearCountry() {
-    ['cName','cDesc','cClothing','cSIM','cLogistics','cLodging','cShopping','cFood','cLaundry','cPayments'].forEach(id => document.getElementById(id).value = '');
+    ['cName','cDesc','cClothing','cSim','cLogistics','cLodging','cShopping','cFood','cLaundry','cPayments'].forEach(id => document.getElementById(id).value = '');
     cityTags.length = 0; renderTags();
     document.getElementById('coverPrev').innerHTML = '';
     updatePreview();
