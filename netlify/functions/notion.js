@@ -3,7 +3,7 @@ exports.handler = async function (event) {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  const NOTION_TOKEN = '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';
+  const NOTION_TOKEN = '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';
   const NOTION_VER   = '2022-06-28';
 
   try {
