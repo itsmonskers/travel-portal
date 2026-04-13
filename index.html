@@ -862,7 +862,7 @@
 
   const SECTIONS = [
     { id: 'cClothing',  label: 'Clothing',   icon: '👕' },
-    { id: 'cSim',       label: 'Sim Card',   icon: '📱' },
+    { id: 'cSIM',       label: 'SIM Card',   icon: '📱' },
     { id: 'cLogistics', label: 'Logistics',  icon: '🚌' },
     { id: 'cLodging',   label: 'Lodging',    icon: '🏨' },
     { id: 'cShopping',  label: 'Shopping',   icon: '🛍️' },
@@ -1233,7 +1233,7 @@
   }
 
   function clearCountry() {
-    ['cName','cDesc','cClothing','cSim','cLogistics','cLodging','cShopping','cFood','cLaundry','cPayments'].forEach(id => document.getElementById(id).value = '');
+    ['cName','cDesc','cClothing','cSIM','cLogistics','cLodging','cShopping','cFood','cLaundry','cPayments'].forEach(id => document.getElementById(id).value = '');
     cityTags.length = 0; renderTags();
     document.getElementById('coverPrev').innerHTML = '';
     updatePreview();
