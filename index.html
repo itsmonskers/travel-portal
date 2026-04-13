@@ -1134,12 +1134,26 @@
 
       btn.textContent = 'Pushing to Notion...';
 
+      // Build properties to fill the database columns
+      const properties = {
+        Name: { title: richText(document.getElementById('cName').value.trim()) }
+      };
+      SECTIONS.forEach(s => {
+        const val = document.getElementById(s.id).value.trim();
+        if (val) properties[s.label] = { rich_text: richText(val) };
+      });
+      if (cityTags.length) {
+        properties['Cities'] = { rich_text: richText(cityTags.join(', ')) };
+      }
+      const desc = document.getElementById('cDesc').value.trim();
+      if (desc) properties['Description'] = { rich_text: richText(desc) };
+
       const res = await fetch(PROXY, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           endpoint: 'pages',
-          payload: { parent: { database_id: COUNTRIES_DB }, properties: { Name: { title: richText(document.getElementById('cName').value.trim()) } }, children }
+          payload: { parent: { database_id: COUNTRIES_DB }, properties, children }
         })
       });
 
@@ -1188,6 +1202,14 @@
 
       btn.textContent = 'Pushing to Notion...';
 
+      const cityProperties = {
+        Name: { title: richText(document.getElementById('cityName').value.trim()) },
+        'Parent Country': { rich_text: richText(document.getElementById('cityParent').value.trim()) },
+      };
+      const cityDescVal = document.getElementById('cityDesc').value.trim();
+      if (cityDescVal) cityProperties['Description'] = { rich_text: richText(cityDescVal) };
+      if (places.length) cityProperties['Places to Visit'] = { rich_text: richText(places.join(', ')) };
+
       const res = await fetch(PROXY, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1195,10 +1217,7 @@
           endpoint: 'pages',
           payload: {
             parent: { database_id: CITIES_DB },
-            properties: {
-              Name: { title: richText(document.getElementById('cityName').value.trim()) },
-              'Parent Country': { rich_text: richText(document.getElementById('cityParent').value.trim()) }
-            },
+            properties: cityProperties,
             children
           }
         })
