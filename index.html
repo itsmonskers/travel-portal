@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carlo's Travel Wiki — Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface2: #1e1e1e;
+    --border: #2a2a2a;
+    --text: #f0f0f0;
+    --muted: #666;
+    --accent: #02C39A;
+    --accent2: #F4A261;
+    --red: #E76F51;
+    --white: #ffffff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+
+  .header-tag {
+    font-size: 10px;
+    background: var(--surface2);
+    color: var(--muted);
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface2);
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+
+  .status-dot.on { background: var(--accent); }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 2rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── LAYOUT ── */
+  .workspace {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    height: calc(100vh - 97px);
+  }
+
+  .panel-form {
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+    padding: 2rem;
+  }
+
+  .panel-preview {
+    overflow-y: auto;
+    background: #111;
+    position: relative;
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── FORM ELEMENTS ── */
+  .field { margin-bottom: 1.25rem; }
+
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .field label span {
+    color: var(--red);
+    margin-left: 2px;
+  }
+
+  input[type="text"],
+  input[type="url"],
+  select,
+  textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+  }
+
+  textarea { min-height: 90px; line-height: 1.6; }
+  textarea.short { min-height: 70px; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── SECTION DIVIDER ── */
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin: 1.5rem 0 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── TAG INPUT ── */
+  .tag-wrapper {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-items: center;
+    min-height: 42px;
+    cursor: text;
+    transition: border-color 0.2s;
+  }
+
+  .tag-wrapper:focus-within { border-color: var(--accent); }
+
+  .tag {
+    background: rgba(2,195,154,0.15);
+    color: var(--accent);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .tag button {
+    background: none;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0;
+    opacity: 0.6;
+    line-height: 1;
+  }
+
+  .tag button:hover { opacity: 1; }
+
+  .tag-input {
+    background: transparent !important;
+    border: none !important;
+    padding: 2px 4px !important;
+    font-size: 12px !important;
+    flex: 1;
+    min-width: 80px;
+    color: var(--text) !important;
+    outline: none !important;
+  }
+
+  /* ── UPLOAD ── */
+  .upload-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface2);
+  }
+
+  .upload-zone:hover { border-color: var(--accent); }
+  .upload-zone.drag { border-color: var(--accent); background: rgba(2,195,154,0.05); }
+
+  .upload-zone p { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .upload-zone p strong { color: var(--accent); }
+  input[type="file"] { display: none; }
+
+  .img-preview {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 6px;
+  }
+
+  .img-thumb {
+    aspect-ratio: 1;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border);
+  }
+
+  .img-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+  .img-thumb button {
+    position: absolute;
+    top: 3px; right: 3px;
+    width: 18px; height: 18px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── URL LIST ── */
+  .url-list { display: flex; flex-direction: column; gap: 6px; }
+  .url-row { display: flex; gap: 6px; }
+  .url-row input { flex: 1; }
+
+  .btn-ghost {
+    background: none;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 7px 12px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    margin-top: 4px;
+    transition: all 0.15s;
+  }
+
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-icon-sm {
+    width: 36px; height: 36px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+
+  .btn-icon-sm:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── SUBMIT BAR ── */
+  .submit-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 12px 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 100;
+  }
+
+  .submit-hint { font-size: 11px; color: var(--muted); }
+
+  .btn-submit {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .btn-submit:hover { opacity: 0.85; transform: translateY(-1px); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 72px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--accent);
+    color: #000;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s;
+    z-index: 200;
+    white-space: nowrap;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--red); color: white; }
+
+  /* ══════════════════════════════
+     PREVIEW PANEL — Carlo's style
+  ══════════════════════════════ */
+
+  .preview-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--muted);
+    font-size: 13px;
+    gap: 10px;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .preview-empty .icon { font-size: 36px; opacity: 0.3; }
+
+  /* Country Preview */
+  .prev-cover {
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .prev-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    top: 0; left: 0;
+  }
+
+  .prev-cover-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  }
+
+  .prev-body { padding: 1.5rem; }
+
+  .prev-flag-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0.75rem;
+  }
+
+  .prev-country-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    color: var(--white);
+    letter-spacing: 0.03em;
+    line-height: 1;
+  }
+
+  .prev-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .prev-meta-row {
+    display: flex;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .prev-meta-label { width: 60px; }
+
+  .prev-cities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 1.25rem;
+  }
+
+  .prev-city-btn {
+    background: rgba(2,195,154,0.12);
+    border: 1px solid rgba(2,195,154,0.3);
+    border-radius: 6px;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .prev-desc {
+    font-size: 13px;
+    color: #ccc;
+    line-height: 1.7;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .prev-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .prev-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+  }
+
+  .prev-card-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 0.5rem;
+  }
+
+  .prev-card-icon {
+    font-size: 14px;
+  }
+
+  .prev-card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+
+  .prev-card-body {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* City Preview */
+  .prev-city-cover {
+    width: 100%;
+    height: 180px;
+    background: #1a1a2e;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .prev-city-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .prev-city-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    color: var(--white);
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+  }
+
+  .prev-parent {
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .prev-places { margin-bottom: 1.25rem; }
+
+  .prev-places-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .prev-place-item {
+    font-size: 12px;
+    color: #ccc;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .prev-place-item::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .prev-gallery {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-top: 1rem;
+  }
+
+  .prev-gallery img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    border-radius: 6px;
+  }
+
+  .prev-map img {
+    width: 100%;
+    border-radius: 8px;
+    margin-top: 0.75rem;
+  }
+
+  .prev-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 1.25rem 0 0.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .workspace { grid-template-columns: 1fr; height: auto; }
+    .panel-preview { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="header-logo">Travel Wiki</div>
+    <div class="header-tag">Prototype</div>
+  </div>
+  <div class="status-pill">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Not connected</span>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('country', this)">🌍 Country Entry</button>
+  <button class="tab" onclick="switchTab('city', this)">🏙️ City Entry</button>
+</div>
+
+<div class="workspace">
+
+  <!-- ══ FORM PANEL ══ -->
+  <div class="panel-form">
+
+    <!-- COUNTRY FORM -->
+    <div class="tab-content active" id="form-country">
+
+      <div class="section-label">Basic Info</div>
+
+      <div class="field">
+        <label>Country Name <span>*</span></label>
+        <input type="text" id="cName" placeholder="e.g. Japan" oninput="updatePreview()" />
+      </div>
+
+      <div class="field">
+        <label>Cover Photo</label>
+        <div class="upload-zone" id="coverZone"
+             onclick="document.getElementById('coverFile').click()"
+             ondragover="drag(event,'coverZone')" ondragleave="undrag('coverZone')"
+             ondrop="dropFile(event,'coverFile','coverPrev','single')">
+          <div style="font-size:24px">🖼️</div>
+          <p><strong>Click or drag</strong> a cover photo</p>
+        </div>
+        <input type="file" id="coverFile" accept="image/*" onchange="previewImg(event,'coverPrev','single')">
+        <div id="coverPrev" class="img-preview"></div>
+      </div>
+
+      <div class="field">
+        <label>Cities <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;font-weight:400;margin-left:4px">— press Enter to add</span></label>
+        <div class="tag-wrapper" id="cityTagWrap" onclick="document.getElementById('cityTagIn').focus()">
+          <input class="tag-input" id="cityTagIn" type="text" placeholder="Add city..." />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Description <span>*</span></label>
+        <textarea id="cDesc" placeholder="What makes this country special..." oninput="updatePreview()"></textarea>
+      </div>
+
+      <div class="section-label">Travel Essentials</div>
+
+      <div class="field">
+        <label>Clothing</label>
+        <textarea class="short" id="cClothing" placeholder="What to wear, dress codes..." oninput="updatePreview()"></textarea>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Sim Card</label>
+          <textarea class="short" id="cSim" placeholder="Best SIM options..." oninput="updatePreview()"></textarea>
+        </div>
+        <div class="field">
+          <label>Logistics</label>
+          <textarea class="short" id="cLogistics" placeholder="Getting around..." oninput="updatePreview()"></textarea>
+        </div>
+      </div>
+
+      <div class="section-label">Stay & Shop</div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Lodging</label>
+          <textarea class="short" id="cLodging" placeholder="Where to stay..." oninput="updatePreview()"></textarea>
+        </div>
+        <div class="field">
+          <label>Shopping</label>
+          <textarea class="short" id="cShopping" placeholder="What to buy..." oninput="updatePreview()"></textarea>
+        </div>
+      </div>
+
+      <div class="section-label">Daily Life</div>
+
+      <div class="field">
+        <label>Food</label>
+        <textarea class="short" id="cFood" placeholder="Must-try dishes..." oninput="updatePreview()"></textarea>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Laundry</label>
+          <textarea class="short" id="cLaundry" placeholder="Laundry tips..." oninput="updatePreview()"></textarea>
+        </div>
+        <div class="field">
+          <label>Payments</label>
+          <textarea class="short" id="cPayments" placeholder="Cash vs card..." oninput="updatePreview()"></textarea>
+        </div>
+      </div>
+
+      <div style="height:60px"></div>
+    </div>
+
+    <!-- CITY FORM -->
+    <div class="tab-content" id="form-city">
+
+      <div class="section-label">City Info</div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>City Name <span>*</span></label>
+          <input type="text" id="cityName" placeholder="e.g. Osaka" oninput="updatePreview()" />
+        </div>
+        <div class="field">
+          <label>Parent Country <span>*</span></label>
+          <input type="text" id="cityParent" placeholder="e.g. Japan" oninput="updatePreview()" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Description <span>*</span></label>
+        <textarea id="cityDesc" placeholder="What makes this city worth visiting..." oninput="updatePreview()"></textarea>
+      </div>
+
+      <div class="section-label">Places & Map</div>
+
+      <div class="field">
+        <label>Places to Visit <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;font-weight:400;margin-left:4px">— one per line</span></label>
+        <textarea id="cityPlaces" placeholder="Dotonbori&#10;Osaka Castle&#10;Nishiki Market" oninput="updatePreview()"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Google Map Screenshot</label>
+        <div class="upload-zone" id="mapZone"
+             onclick="document.getElementById('mapFile').click()"
+             ondragover="drag(event,'mapZone')" ondragleave="undrag('mapZone')"
+             ondrop="dropFile(event,'mapFile','mapPrev','single')">
+          <div style="font-size:24px">🗺️</div>
+          <p><strong>Click or drag</strong> your Google Maps screenshot</p>
+        </div>
+        <input type="file" id="mapFile" accept="image/*" onchange="previewImg(event,'mapPrev','single')">
+        <div id="mapPrev" class="img-preview"></div>
+      </div>
+
+      <div class="section-label">Gallery</div>
+
+      <div class="field">
+        <label>Upload Photos</label>
+        <div class="upload-zone" id="galZone"
+             onclick="document.getElementById('galFiles').click()"
+             ondragover="drag(event,'galZone')" ondragleave="undrag('galZone')"
+             ondrop="dropFile(event,'galFiles','galPrev','multi')">
+          <div style="font-size:24px">📸</div>
+          <p><strong>Click or drag</strong> — multiple photos supported</p>
+        </div>
+        <input type="file" id="galFiles" accept="image/*" multiple onchange="previewImg(event,'galPrev','multi')">
+        <div id="galPrev" class="img-preview"></div>
+      </div>
+
+      <div class="field">
+        <label>Or Paste Image URLs</label>
+        <div class="url-list" id="urlList">
+          <div class="url-row">
+            <input type="url" placeholder="https://..." oninput="updatePreview()" />
+            <button class="btn-icon-sm" onclick="removeUrl(this)">×</button>
+          </div>
+        </div>
+        <button class="btn-ghost" onclick="addUrl()">+ Add URL</button>
+      </div>
+
+      <div style="height:60px"></div>
+    </div>
+
+  </div>
+
+  <!-- ══ PREVIEW PANEL ══ -->
+  <div class="panel-preview" id="previewPanel">
+    <div class="preview-empty" id="previewEmpty">
+      <div class="icon">✈️</div>
+      <div>Start filling the form to see a live preview</div>
+      <div style="font-size:11px;color:#444">This is how it'll look in Carlo's portal</div>
+    </div>
+    <div id="previewContent" style="display:none"></div>
+  </div>
+
+</div>
+
+<!-- SUBMIT BAR -->
+<div class="submit-bar">
+  <div class="submit-hint">Pushes directly to Carlo's Notion workspace</div>
+  <button class="btn-submit" id="submitBtn" onclick="handleSubmit()">Push to Notion ↗</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── CONFIG ──
+  const NOTION_TOKEN   = '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';
+  const COUNTRIES_DB   = '33f7101363f98099a1e4ce2c5d38bc85';
+  const CITIES_DB      = '33f7101363f98035a23ffd7d5095b9d6';
+  const NOTION_VER     = '2022-06-28';
+  const PROXY          = '/.netlify/functions/notion';
+  const CLD_CLOUD      = 'dd7lauj1a';
+  const CLD_PRESET     = 'Travel Guide Carlo';
+
+  let activeTab = 'country';
+  const cityTags = [];
+  const coverFiles = [];
+  const mapFiles = [];
+  const galFiles = [];
+
+  const SECTIONS = [
+    { id: 'cClothing',  label: 'Clothing',   icon: '👕' },
+    { id: 'cSim',       label: 'Sim Card',   icon: '📱' },
+    { id: 'cLogistics', label: 'Logistics',  icon: '🚌' },
+    { id: 'cLodging',   label: 'Lodging',    icon: '🏨' },
+    { id: 'cShopping',  label: 'Shopping',   icon: '🛍️' },
+    { id: 'cFood',      label: 'Food',       icon: '🍜' },
+    { id: 'cLaundry',   label: 'Laundry',    icon: '👗' },
+    { id: 'cPayments',  label: 'Payments',   icon: '💳' },
+  ];
+
+  // ── TAB ──
+  function switchTab(tab, btn) {
+    activeTab = tab;
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('form-' + tab).classList.add('active');
+    btn.classList.add('active');
+    updatePreview();
+  }
+
+  // ── CITY TAGS ──
+  document.getElementById('cityTagIn').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && this.value.trim()) {
+      e.preventDefault();
+      if (!cityTags.includes(this.value.trim())) {
+        cityTags.push(this.value.trim());
+        renderTags();
+        updatePreview();
+      }
+      this.value = '';
+    } else if (e.key === 'Backspace' && !this.value && cityTags.length) {
+      cityTags.pop();
+      renderTags();
+      updatePreview();
+    }
+  });
+
+  function renderTags() {
+    const wrap = document.getElementById('cityTagWrap');
+    const input = document.getElementById('cityTagIn');
+    wrap.querySelectorAll('.tag').forEach(t => t.remove());
+    cityTags.forEach((tag, i) => {
+      const el = document.createElement('div');
+      el.className = 'tag';
+      el.innerHTML = `${tag}<button onclick="removeTag(${i})">×</button>`;
+      wrap.insertBefore(el, input);
+    });
+  }
+
+  function removeTag(i) {
+    cityTags.splice(i, 1);
+    renderTags();
+    updatePreview();
+  }
+
+  // ── FILE HANDLING ──
+  function previewImg(e, previewId, mode) {
+    const files = Array.from(e.target.files);
+    const container = document.getElementById(previewId);
+    if (mode === 'single') container.innerHTML = '';
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const div = document.createElement('div');
+        div.className = 'img-thumb';
+        div.innerHTML = `<img src="${ev.target.result}"><button onclick="this.parentElement.remove();updatePreview()">×</button>`;
+        container.appendChild(div);
+        updatePreview();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function drag(e, id) { e.preventDefault(); document.getElementById(id).classList.add('drag'); }
+  function undrag(id) { document.getElementById(id).classList.remove('drag'); }
+
+  function dropFile(e, inputId, prevId, mode) {
+    e.preventDefault();
+    undrag(e.currentTarget.id);
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    const dt = new DataTransfer();
+    files.forEach(f => dt.items.add(f));
+    const input = document.getElementById(inputId);
+    input.files = dt.files;
+    previewImg({ target: input }, prevId, mode);
+  }
+
+  // ── URL LIST ──
+  function addUrl() {
+    const list = document.getElementById('urlList');
+    const row = document.createElement('div');
+    row.className = 'url-row';
+    row.innerHTML = `<input type="url" placeholder="https://..." oninput="updatePreview()"><button class="btn-icon-sm" onclick="removeUrl(this)">×</button>`;
+    list.appendChild(row);
+  }
+
+  function removeUrl(btn) {
+    if (document.querySelectorAll('.url-row').length > 1) {
+      btn.parentElement.remove();
+      updatePreview();
+    }
+  }
+
+  // ── LIVE PREVIEW ──
+  function updatePreview() {
+    const empty = document.getElementById('previewEmpty');
+    const content = document.getElementById('previewContent');
+
+    if (activeTab === 'country') {
+      const name = document.getElementById('cName').value.trim();
+      const desc = document.getElementById('cDesc').value.trim();
+      if (!name && !desc) { empty.style.display = 'flex'; content.style.display = 'none'; return; }
+      empty.style.display = 'none';
+      content.style.display = 'block';
+      content.innerHTML = buildCountryPreview(name, desc);
+    } else {
+      const name = document.getElementById('cityName').value.trim();
+      const parent = document.getElementById('cityParent').value.trim();
+      if (!name && !parent) { empty.style.display = 'flex'; content.style.display = 'none'; return; }
+      empty.style.display = 'none';
+      content.style.display = 'block';
+      content.innerHTML = buildCityPreview(name, parent);
+    }
+  }
+
+  function buildCountryPreview(name, desc) {
+    const coverThumb = document.querySelector('#coverPrev .img-thumb img');
+    const coverSrc = coverThumb ? coverThumb.src : '';
+
+    const citiesHtml = cityTags.length
+      ? cityTags.map(c => `<div class="prev-city-btn">🏙️ ${c}</div>`).join('')
+      : '<div style="font-size:11px;color:var(--muted)">No cities added yet</div>';
+
+    const cardsHtml = SECTIONS.map(s => {
+      const val = document.getElementById(s.id).value.trim();
+      return `<div class="prev-card">
+        <div class="prev-card-header">
+          <span class="prev-card-icon">${s.icon}</span>
+          <span class="prev-card-title">${s.label}</span>
+        </div>
+        <div class="prev-card-body">${val || '<span style="color:#444;font-style:italic">Not filled yet</span>'}</div>
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="prev-cover">
+        ${coverSrc ? `<img src="${coverSrc}">` : ''}
+        <div class="prev-cover-overlay"></div>
+      </div>
+      <div class="prev-body">
+        <div class="prev-flag-name">
+          <div class="prev-country-name">${name || 'Country Name'}</div>
+        </div>
+        <div class="prev-meta">
+          <div class="prev-meta-row"><span class="prev-meta-label">Created</span><span>${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</span></div>
+          <div class="prev-meta-row"><span class="prev-meta-label">Cities</span><span style="color:var(--accent)">${cityTags.length ? cityTags.join(', ') : 'None yet'}</span></div>
+        </div>
+        <div class="prev-cities">${citiesHtml}</div>
+        ${desc ? `<div class="prev-desc">${desc}</div>` : ''}
+        <div class="prev-cards">${cardsHtml}</div>
+      </div>`;
+  }
+
+  function buildCityPreview(name, parent) {
+    const mapThumb = document.querySelector('#mapPrev .img-thumb img');
+    const mapSrc = mapThumb ? mapThumb.src : '';
+
+    const galThumbs = Array.from(document.querySelectorAll('#galPrev .img-thumb img')).map(i => i.src);
+    const urlInputs = Array.from(document.querySelectorAll('#urlList input[type="url"]')).map(i => i.value.trim()).filter(Boolean);
+    const allGal = [...galThumbs, ...urlInputs];
+
+    const placesText = document.getElementById('cityPlaces').value.trim();
+    const places = placesText ? placesText.split('\n').join(',').split(',').map(p => p.trim()).filter(Boolean) : [];
+
+    const placesHtml = places.length
+      ? places.map(p => `<div class="prev-place-item">${p}</div>`).join('')
+      : '<div style="font-size:11px;color:var(--muted)">No places added yet</div>';
+
+    const galHtml = allGal.length
+      ? `<div class="prev-gallery">${allGal.map(url => `<img src="${url}" onerror="this.style.display='none'">`).join('')}</div>`
+      : '';
+
+    const desc = document.getElementById('cityDesc').value.trim();
+
+    return `
+      <div class="prev-city-cover">
+        ${mapSrc ? `<img src="${mapSrc}">` : ''}
+      </div>
+      <div class="prev-body">
+        <div class="prev-city-name">${name || 'City Name'}</div>
+        <div class="prev-parent">${parent ? `📍 ${parent}` : 'Parent country'}</div>
+        ${desc ? `<div class="prev-desc">${desc}</div>` : ''}
+        <div class="prev-places">
+          <div class="prev-places-title">Places to Visit</div>
+          ${placesHtml}
+        </div>
+        ${mapSrc ? `<div class="prev-map"><div class="prev-section-title">Map</div><img src="${mapSrc}"></div>` : ''}
+        ${galHtml ? `<div class="prev-section-title">Gallery</div>${galHtml}` : ''}
+      </div>`;
+  }
+
+  // ── CLOUDINARY ──
+  async function uploadCloudinary(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLD_PRESET);
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLD_CLOUD}/image/upload`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!data.secure_url) throw new Error('Cloudinary failed');
+    return data.secure_url;
+  }
+
+  async function uploadAllImages(inputId) {
+    const files = document.getElementById(inputId).files;
+    const urls = [];
+    for (const file of files) urls.push(await uploadCloudinary(file));
+    return urls;
+  }
+
+  function richText(val) {
+    return [{ type: 'text', text: { content: (val || '').slice(0, 2000) } }];
+  }
+
+  function notionHeaders() {
+    return { 'Content-Type': 'application/json', 'Notion-Version': NOTION_VER, 'Authorization': 'Bearer ' + NOTION_TOKEN };
+  }
+
+  // ── SUBMIT ──
+  async function handleSubmit() {
+    const btn = document.getElementById('submitBtn');
+    if (activeTab === 'country') {
+      const name = document.getElementById('cName').value.trim();
+      const desc = document.getElementById('cDesc').value.trim();
+      if (!name || !desc) { showToast('Fill in Country Name and Description first', true); return; }
+      await submitCountry(btn);
+    } else {
+      const name = document.getElementById('cityName').value.trim();
+      const parent = document.getElementById('cityParent').value.trim();
+      const desc = document.getElementById('cityDesc').value.trim();
+      if (!name || !parent || !desc) { showToast('Fill in Name, Parent Country and Description', true); return; }
+      await submitCity(btn);
+    }
+  }
+
+  async function submitCountry(btn) {
+    btn.disabled = true;
+    btn.textContent = 'Uploading cover...';
+
+    try {
+      let coverUrl = '';
+      const coverInput = document.getElementById('coverFile');
+      if (coverInput.files.length) coverUrl = await uploadCloudinary(coverInput.files[0]);
+
+      const children = [];
+
+      if (coverUrl) {
+        children.push({ object: 'block', type: 'image', image: { type: 'external', external: { url: coverUrl } } });
+      }
+
+      SECTIONS.forEach(s => {
+        const val = document.getElementById(s.id).value.trim();
+        if (!val) return;
+        children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText(s.label) } });
+        children.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: richText(val) } });
+      });
+
+      if (cityTags.length) {
+        children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Cities') } });
+        cityTags.forEach(city => children.push({ object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: richText(city) } }));
+      }
+
+      btn.textContent = 'Pushing to Notion...';
+
+      const res = await fetch(PROXY, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          endpoint: 'pages',
+          payload: { parent: { database_id: COUNTRIES_DB }, properties: { Name: { title: richText(document.getElementById('cName').value.trim()) } }, children }
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) { showToast('✓ Country pushed to Notion!'); setConnected(true); clearCountry(); }
+      else { showToast('Error: ' + data.message, true); console.error(data); }
+    } catch (err) { showToast('Network error — check console', true); console.error(err); }
+
+    btn.disabled = false;
+    btn.textContent = 'Push to Notion ↗';
+  }
+
+  async function submitCity(btn) {
+    btn.disabled = true;
+    btn.textContent = 'Uploading images...';
+
+    try {
+      const mapInput = document.getElementById('mapFile');
+      const galInput = document.getElementById('galFiles');
+      const mapUrl = mapInput.files.length ? await uploadCloudinary(mapInput.files[0]) : '';
+      const galUrls = galInput.files.length ? await uploadAllImages('galFiles') : [];
+      const urlInputUrls = Array.from(document.querySelectorAll('#urlList input[type="url"]')).map(i => i.value.trim()).filter(Boolean);
+      const allGal = [...galUrls, ...urlInputUrls];
+
+      const placesText = document.getElementById('cityPlaces').value.trim();
+      const places = placesText ? placesText.split('\n').join(',').split(',').map(p => p.trim()).filter(Boolean) : [];
+
+      const children = [];
+      children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Description') } });
+      children.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: richText(document.getElementById('cityDesc').value.trim()) } });
+
+      if (places.length) {
+        children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Places to Visit') } });
+        places.forEach(p => children.push({ object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: richText(p) } }));
+      }
+
+      if (mapUrl) {
+        children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Map') } });
+        children.push({ object: 'block', type: 'image', image: { type: 'external', external: { url: mapUrl } } });
+      }
+
+      if (allGal.length) {
+        children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Gallery') } });
+        allGal.forEach(url => children.push({ object: 'block', type: 'image', image: { type: 'external', external: { url } } }));
+      }
+
+      btn.textContent = 'Pushing to Notion...';
+
+      const res = await fetch(PROXY, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          endpoint: 'pages',
+          payload: {
+            parent: { database_id: CITIES_DB },
+            properties: {
+              Name: { title: richText(document.getElementById('cityName').value.trim()) },
+              'Parent Country': { rich_text: richText(document.getElementById('cityParent').value.trim()) }
+            },
+            children
+          }
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) { showToast('✓ City pushed to Notion!'); setConnected(true); clearCity(); }
+      else { showToast('Error: ' + data.message, true); console.error(data); }
+    } catch (err) { showToast('Network error — check console', true); console.error(err); }
+
+    btn.disabled = false;
+    btn.textContent = 'Push to Notion ↗';
+  }
+
+  function clearCountry() {
+    ['cName','cDesc','cClothing','cSim','cLogistics','cLodging','cShopping','cFood','cLaundry','cPayments'].forEach(id => document.getElementById(id).value = '');
+    cityTags.length = 0; renderTags();
+    document.getElementById('coverPrev').innerHTML = '';
+    updatePreview();
+  }
+
+  function clearCity() {
+    ['cityName','cityParent','cityDesc','cityPlaces'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('mapPrev').innerHTML = '';
+    document.getElementById('galPrev').innerHTML = '';
+    updatePreview();
+  }
+
+  function setConnected(on) {
+    document.getElementById('statusDot').className = 'status-dot' + (on ? ' on' : '');
+    document.getElementById('statusText').textContent = on ? 'Connected to Notion' : 'Not connected';
+  }
+
+  function showToast(msg, isError) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (isError ? ' error' : '') + ' show';
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+</script>
+</body>
+</html>
