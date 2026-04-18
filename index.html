@@ -709,8 +709,8 @@
 
       <div class="grid2">
         <div class="field">
-          <label>SIM Card</label>
-          <textarea class="short" id="cSIM" placeholder="Best SIM options..." oninput="updatePreview()"></textarea>
+          <label>Sim Card</label>
+          <textarea class="short" id="cSim" placeholder="Best SIM options..." oninput="updatePreview()"></textarea>
         </div>
         <div class="field">
           <label>Logistics</label>
@@ -850,7 +850,7 @@
   const COUNTRIES_DB   = '33f7101363f98099a1e4ce2c5d38bc85';
   const CITIES_DB      = '33f7101363f98035a23ffd7d5095b9d6';
   const NOTION_VER     = '2022-06-28';
-  const PROXY          = '/.netlify/functions/notion';
+  const PROXY          = 'https://corsproxy.io/?url=';
   const CLD_CLOUD      = 'dd7lauj1a';
   const CLD_PRESET     = 'Travel Guide Carlo';
 
@@ -862,7 +862,7 @@
 
   const SECTIONS = [
     { id: 'cClothing',  label: 'Clothing',   icon: '👕' },
-    { id: 'cSIM',       label: 'SIM Card',   icon: '📱' },
+    { id: 'cSim',       label: 'Sim Card',   icon: '📱' },
     { id: 'cLogistics', label: 'Logistics',  icon: '🚌' },
     { id: 'cLodging',   label: 'Lodging',    icon: '🏨' },
     { id: 'cShopping',  label: 'Shopping',   icon: '🛍️' },
@@ -882,15 +882,34 @@
   }
 
   // ── CITY TAGS ──
-  document.getElementById('cityTagIn').addEventListener('keydown', function(e) {
+  // Tracks city name → Notion page ID so we can link them to the country
+  const cityPageIds = {};
+
+  document.getElementById('cityTagIn').addEventListener('keydown', async function(e) {
     if (e.key === 'Enter' && this.value.trim()) {
       e.preventDefault();
-      if (!cityTags.includes(this.value.trim())) {
-        cityTags.push(this.value.trim());
-        renderTags();
-        updatePreview();
-      }
+      const cityName = this.value.trim();
+      if (cityTags.includes(cityName)) { this.value = ''; return; }
+
+      // Add tag immediately so Carlo sees instant feedback
+      cityTags.push(cityName);
+      renderTags(cityName, 'creating');
       this.value = '';
+      updatePreview();
+
+      // Auto-create the city page in Notion in the background
+      try {
+        const countryName = document.getElementById('cName').value.trim() || 'Unknown Country';
+        const pageId = await autoCreateCityPage(cityName, countryName);
+        cityPageIds[cityName] = pageId;
+        renderTags(); // re-render all tags as done
+        showToast('✓ ' + cityName + ' page created in Notion');
+        setConnected(true);
+      } catch (err) {
+        console.error('City auto-create failed:', err);
+        renderTags(); // still keep tag, just without spinner
+        showToast('Could not auto-create ' + cityName + ' — will retry on submit', true);
+      }
     } else if (e.key === 'Backspace' && !this.value && cityTags.length) {
       cityTags.pop();
       renderTags();
@@ -898,20 +917,75 @@
     }
   });
 
-  function renderTags() {
+  // Creates a city page in Notion with full structure ready to fill
+  async function autoCreateCityPage(cityName, countryName) {
+    const children = [
+      {
+        object: 'block', type: 'callout',
+        callout: {
+          rich_text: richText('This page was auto-created. Click into each section below and fill in your tips.'),
+          icon: { type: 'emoji', emoji: '✏️' },
+          color: 'gray_background'
+        }
+      },
+      { object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Description') } },
+      { object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: 'Write a description of ' + cityName + ' here...' } }] } },
+      { object: 'block', type: 'divider', divider: {} },
+      { object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Places to Visit') } },
+      { object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: richText('Add places here...') } },
+      { object: 'block', type: 'divider', divider: {} },
+      { object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Tips') } },
+      { object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: richText('Add tips here...') } },
+      { object: 'block', type: 'divider', divider: {} },
+      { object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Map') } },
+      { object: 'block', type: 'paragraph', paragraph: { rich_text: richText('Upload a Google Maps screenshot here.') } },
+      { object: 'block', type: 'divider', divider: {} },
+      { object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Gallery') } },
+      { object: 'block', type: 'paragraph', paragraph: { rich_text: richText('Add photos here.') } },
+    ];
+
+    const res = await fetch(PROXY + encodeURIComponent('https://api.notion.com/v1/pages'), {
+      method: 'POST',
+      headers: notionHeaders(),
+      body: JSON.stringify({
+        parent: { database_id: CITIES_DB },
+        properties: {
+          Name:             { title: richText(cityName) },
+          'Parent Country': { rich_text: richText(countryName) },
+          'Description of City': { rich_text: richText('') }
+        },
+        children
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Notion error');
+    return data.id;
+  }
+
+  function renderTags(creatingName, state) {
     const wrap = document.getElementById('cityTagWrap');
     const input = document.getElementById('cityTagIn');
     wrap.querySelectorAll('.tag').forEach(t => t.remove());
     cityTags.forEach((tag, i) => {
       const el = document.createElement('div');
       el.className = 'tag';
-      el.innerHTML = `${tag}<button onclick="removeTag(${i})">×</button>`;
+      const isCreating = tag === creatingName && state === 'creating';
+      const hasPage = cityPageIds[tag];
+      const indicator = isCreating
+        ? '<span style="opacity:0.6;font-size:10px;margin-left:2px">creating...</span>'
+        : hasPage
+          ? '<span style="color:var(--accent);font-size:10px;margin-left:2px" title="Page created in Notion">✓</span>'
+          : '';
+      el.innerHTML = `${tag}${indicator}<button onclick="removeTag(${i})">×</button>`;
       wrap.insertBefore(el, input);
     });
   }
 
   function removeTag(i) {
+    const removed = cityTags[i];
     cityTags.splice(i, 1);
+    delete cityPageIds[removed];
     renderTags();
     updatePreview();
   }
@@ -1116,68 +1190,27 @@
 
       const children = [];
 
-      // Description paragraph at top
-      const desc = document.getElementById('cDesc').value.trim();
-      if (desc) {
-        children.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: richText(desc) } });
-        children.push({ object: 'block', type: 'divider', divider: {} });
+      if (coverUrl) {
+        children.push({ object: 'block', type: 'image', image: { type: 'external', external: { url: coverUrl } } });
       }
 
-      // Cities as a callout block
-      if (cityTags.length) {
-        children.push({
-          object: 'block', type: 'callout',
-          callout: {
-            icon: { type: 'emoji', emoji: '🏙️' },
-            rich_text: richText('Cities: ' + cityTags.join(' · '))
-          }
-        });
-      }
-
-      // Each section as a callout block with its emoji icon
       SECTIONS.forEach(s => {
         const val = document.getElementById(s.id).value.trim();
         if (!val) return;
-        children.push({
-          object: 'block', type: 'callout',
-          callout: {
-            icon: { type: 'emoji', emoji: s.icon },
-            rich_text: [
-              { type: 'text', text: { content: s.label + '\n' }, annotations: { bold: true } },
-              { type: 'text', text: { content: val.slice(0, 1900) } }
-            ]
-          }
-        });
+        children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText(s.label) } });
+        children.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: richText(val) } });
       });
+
+      if (cityTags.length) {
+        children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Cities') } });
+        cityTags.forEach(city => children.push({ object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: richText(city) } }));
+      }
 
       btn.textContent = 'Pushing to Notion...';
 
-      // Build properties to fill the database columns
-      const properties = {
-        Name: { title: richText(document.getElementById('cName').value.trim()) }
-      };
-      SECTIONS.forEach(s => {
-        const val = document.getElementById(s.id).value.trim();
-        if (val) properties[s.label] = { rich_text: richText(val) };
-      });
-      if (cityTags.length) {
-        properties['Cities'] = { rich_text: richText(cityTags.join(', ')) };
-      }
-      if (desc) properties['Description'] = { rich_text: richText(desc) };
-
-      // Page-level cover and icon
-      const pagePayload = {
-        parent: { database_id: COUNTRIES_DB },
-        icon: { type: 'emoji', emoji: '🌍' },
-        properties,
-        children
-      };
-      if (coverUrl) pagePayload.cover = { type: 'external', external: { url: coverUrl } };
-
-      const res = await fetch(PROXY, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ endpoint: 'pages', payload: pagePayload })
+      const res = await fetch(PROXY + encodeURIComponent('https://api.notion.com/v1/pages'), {
+        method: 'POST', headers: notionHeaders(),
+        body: JSON.stringify({ parent: { database_id: COUNTRIES_DB }, properties: { Name: { title: richText(document.getElementById('cName').value.trim()) } }, children })
       });
 
       const data = await res.json();
@@ -1205,62 +1238,36 @@
       const places = placesText ? placesText.split('\n').join(',').split(',').map(p => p.trim()).filter(Boolean) : [];
 
       const children = [];
+      children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Description') } });
+      children.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: richText(document.getElementById('cityDesc').value.trim()) } });
 
-      // Description
-      const cityDescVal = document.getElementById('cityDesc').value.trim();
-      if (cityDescVal) {
-        children.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: richText(cityDescVal) } });
-        children.push({ object: 'block', type: 'divider', divider: {} });
-      }
-
-      // Places to visit as callout
       if (places.length) {
-        children.push({
-          object: 'block', type: 'callout',
-          callout: {
-            icon: { type: 'emoji', emoji: '📍' },
-            rich_text: [
-              { type: 'text', text: { content: 'Places to Visit\n' }, annotations: { bold: true } },
-              { type: 'text', text: { content: places.join('  ·  ') } }
-            ]
-          }
-        });
+        children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Places to Visit') } });
+        places.forEach(p => children.push({ object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: richText(p) } }));
       }
 
-      // Map image
       if (mapUrl) {
-        children.push({ object: 'block', type: 'heading_3', heading_3: { rich_text: richText('🗺️ Map') } });
+        children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Map') } });
         children.push({ object: 'block', type: 'image', image: { type: 'external', external: { url: mapUrl } } });
       }
 
-      // Gallery images
       if (allGal.length) {
-        children.push({ object: 'block', type: 'heading_3', heading_3: { rich_text: richText('🖼️ Gallery') } });
+        children.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: richText('Gallery') } });
         allGal.forEach(url => children.push({ object: 'block', type: 'image', image: { type: 'external', external: { url } } }));
       }
 
       btn.textContent = 'Pushing to Notion...';
 
-      const cityProperties = {
-        Name: { title: richText(document.getElementById('cityName').value.trim()) },
-        'Parent Country': { rich_text: richText(document.getElementById('cityParent').value.trim()) },
-      };
-      if (cityDescVal) cityProperties['Description'] = { rich_text: richText(cityDescVal) };
-      if (places.length) cityProperties['Places to Visit'] = { rich_text: richText(places.join(', ')) };
-
-      // Page-level cover (map image) and icon
-      const cityPayload = {
-        parent: { database_id: CITIES_DB },
-        icon: { type: 'emoji', emoji: '🏙️' },
-        properties: cityProperties,
-        children
-      };
-      if (mapUrl) cityPayload.cover = { type: 'external', external: { url: mapUrl } };
-
-      const res = await fetch(PROXY, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ endpoint: 'pages', payload: cityPayload })
+      const res = await fetch(PROXY + encodeURIComponent('https://api.notion.com/v1/pages'), {
+        method: 'POST', headers: notionHeaders(),
+        body: JSON.stringify({
+          parent: { database_id: CITIES_DB },
+          properties: {
+            Name: { title: richText(document.getElementById('cityName').value.trim()) },
+            'Parent Country': { rich_text: richText(document.getElementById('cityParent').value.trim()) }
+          },
+          children
+        })
       });
 
       const data = await res.json();
@@ -1273,7 +1280,7 @@
   }
 
   function clearCountry() {
-    ['cName','cDesc','cClothing','cSIM','cLogistics','cLodging','cShopping','cFood','cLaundry','cPayments'].forEach(id => document.getElementById(id).value = '');
+    ['cName','cDesc','cClothing','cSim','cLogistics','cLodging','cShopping','cFood','cLaundry','cPayments'].forEach(id => document.getElementById(id).value = '');
     cityTags.length = 0; renderTags();
     document.getElementById('coverPrev').innerHTML = '';
     updatePreview();
